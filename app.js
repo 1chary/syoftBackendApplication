@@ -1,6 +1,6 @@
 const express = require("express")
 const app = express()
-const jwtToken = require("jsonwebtoken")
+const jwt = require("jsonwebtoken")
 
 const { open } = require("sqlite")
 const sqlite3 = require("sqlite3")
@@ -69,6 +69,31 @@ app.post('/users', async (request, response) => {
     }
   });
   
+  // This function will authenticate jwt token 
+
+  const authenticateToken = (request,response,next) => {
+    let jwtToken;
+    const authHeader = request.headers['authorization']
+    if (authHeader !== undefined) {
+        jwtToken = authHeader.split(" ")[1]
+    }
+    if (authHeader === undefined) {
+        response.send(400)
+        response.send("Token not provided")
+    }
+    else {
+        jwt.verify(jwtToken,'myToken', async(error,payload) => {
+            if (error) {
+                response.send(401);
+                response.send("Invalid JWT Token")
+            }
+            else {
+                next();
+            }
+        })
+    }
+
+  }
   
 
 
