@@ -31,7 +31,7 @@ const initializeTheServer = async () => {
 
 // REGISTER NEW USER 
 // Add the user details to the request body using curl or insomania 
-app.post('/users', async (request, response) => {
+app.post('/users/', async (request, response) => {
     const { username,email,password,role } = request.body;
     const hashedPassword = await bcrypt.hash(request.body.password,10);
     await db.run('INSERT INTO users (username,email,hashedPassword,role) VALUES (?, ?,?,?)', [username,email,password,role], (err) => {
@@ -44,7 +44,7 @@ app.post('/users', async (request, response) => {
 
 
   // Login user 
-  app.post("/login", async (request, response) => {
+  app.post("/login/", async (request, response) => {
     const { email, password } = request.body;
     const getUserEmail = `
       SELECT *
@@ -95,7 +95,58 @@ app.post('/users', async (request, response) => {
 
   }
   
+  // create a content 
+  app.post("/create/", authenticateToken , async(request,response) => {
+    const { username } = request.body;
+    await db.run(`INSERT INTO product_details (title,description,inventory_count) VALUES (?,?,?) WHERE username = ${username} `, [title,description,inventory_count], (err) => {
+      if (err) {
+        return response.status(400).json({ error: 'Error adding details' });
+      }
+      response.status(201).json({ message: 'Details Added Successfully' });
+    });
+  })
 
+  // Read a content 
 
+  app.get("/details/:username", authenticateToken, async(request,response) => {
+    const {username} = request.body;
+    const getDetails = `
+        SELECT *
+        FROM product_details
+        WHERE username = ${username}
+    `
+    const responseData = await db.get(getDetails)
+    response.send(responseData)
+  })
+
+  // update content 
+  app.put("/details/:username", authenticateToken, async(request,response) => {
+    const { username } = request.params;
+    const updateDetails  = request.body;
+    const {title,description,inventory_count} = updateDetails;
+    const updateProductQuery = `
+    UPDATE
+      product_details
+    SET
+      title='${title}',
+      description='${description}',
+      inventory_count = '${inventory_count}'
+    WHERE
+      username = ${username};`;
+    await db.run(updateProductQuery);
+    response.send("Product Details Updated Successfully");
+  })
+
+  // delete 
+  app.delete("/details/:username", authenticateToken, async(request,response) => {
+    const { username } = request.params;
+    const deleteProductQuery = `
+      DELETE FROM
+        product_details
+      WHERE
+        username = ${username};`;
+    await db.run(deleteProductQuery);
+    response.send("Product Details Deleted Successfully");
+  })
 
 initializeTheServer()
